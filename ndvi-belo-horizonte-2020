@@ -1,0 +1,57 @@
+//declaração de variavel
+
+var BELO_HORIZONTE = ee.FeatureCollection ('users/gleisonarquiteto/BELO_HORIZONTE');
+
+print('BELO_HORIZONTE',BELO_HORIZONTE);
+
+//declaration of variables for image date
+var ini = ('2020-01-01');
+var fim = ('2020-12-21');
+var nuvem= 1;
+
+var land8 = ee.ImageCollection ('LANDSAT/LC08/C01/T1_TOA')
+.filterBounds (BELO_HORIZONTE)
+.filterMetadata ('CLOUD_COVER','less_than', nuvem)
+.filterDate (ini,fim);
+
+print ('land8',land8); 
+
+Map.addLayer(BELO_HORIZONTE,{},'BELO_HORIZONTE');
+Map.centerObject(BELO_HORIZONTE,10);
+
+//ver imagens do land8
+
+//calculate median per pixel of images
+
+
+
+var mediana = land8.reduce(ee.Reducer.median());
+print ('land8_mediana', mediana);
+
+var media = land8.reduce(ee.Reducer.mean());
+print ('land8_media', media)
+
+var vis = {bands:['B4_mean','B3_mean','B2_mean'],
+          min: 0,
+          max: 0.2,
+};
+
+Map.addLayer(media.clip(BELO_HORIZONTE),vis, 'medialand8', false);
+
+var ndvi = media.normalizedDifference(['B5_mean','B4_mean']);
+var ndvi2 = mediana.normalizedDifference(['B5_median','B4_median']);
+
+var visndvi = {min:0, max:0.8, palette:["ff0b0b","e26922","f0ff0f","16b33f"]};
+
+Map.addLayer(ndvi.clip(BELO_HORIZONTE), visndvi,'ndvi', false);
+
+Map.addLayer (ndvi2.clip(BELO_HORIZONTE),visndvi,'ndvi2', false);
+
+//export NDVI
+
+Export.image.toDrive ({image:ndvi2.clip(BELO_HORIZONTE),
+                       description:'NDVI_median2020_BH',
+                       folder: 'BELO_HORIZONTE',
+                       scale: 30,
+                       region: BELO_HORIZONTE,
+})
